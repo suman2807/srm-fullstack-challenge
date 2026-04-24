@@ -133,7 +133,7 @@ async function send() {
 
     let data = raw.split(/,|\n/).map(x => x.trim()).filter(x => x);
     try {
-        const res = await fetch("http://localhost:3000/bfhl", {
+        const res = await fetch("/api/bfhl", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ data })

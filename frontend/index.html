@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BFHL UI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f4f6fb;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+            padding: 32px 24px 24px 24px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #2d3a4b;
+        }
+        textarea {
+            width: 100%;
+            font-size: 1.1em;
+            border-radius: 6px;
+            border: 1px solid #cfd8dc;
+            padding: 10px;
+            resize: vertical;
+        }
+        button {
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 24px;
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #125ea2;
+        }
+        .error {
+            color: #d32f2f;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+        .response-section {
+            margin-top: 32px;
+        }
+        .card {
+            background: #f7fafc;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            padding: 18px 16px;
+            margin-bottom: 18px;
+        }
+        .tree {
+            font-family: 'Fira Mono', monospace;
+            background: #e3eaf2;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 8px 0;
+            overflow-x: auto;
+        }
+        .summary {
+            background: #e8f5e9;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-top: 18px;
+        }
+        .meta {
+            color: #607d8b;
+            font-size: 0.97em;
+        }
+        ul {
+            margin: 0 0 0 18px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>SRM Full Stack Engineering Challenge</h2>
+    <div class="meta">Enter node relationships (comma or newline separated, e.g. <code>A-&gt;B, A-&gt;C</code>):</div>
+    <textarea id="input" rows="5" placeholder="A->B, A->C, B->D"></textarea><br>
+    <button onclick="send()">Submit</button>
+    <div id="error" class="error" style="display:none;"></div>
+    <div id="response" class="response-section"></div>
+</div>
+<script>
+function formatTree(tree, indent = '') {
+    let out = '';
+    for (const node in tree) {
+        out += indent + node + '\n';
+        out += formatTree(tree[node], indent + '  ');
+    }
+    return out;
+}
+
+function renderResponse(data) {
+    let html = '';
+    html += `<div class='meta'><b>User:</b> ${data.user_id} | <b>Email:</b> ${data.email_id} | <b>Roll:</b> ${data.college_roll_number}</div>`;
+    html += `<h3>Hierarchies</h3>`;
+    data.hierarchies.forEach(h => {
+        html += `<div class='card'>`;
+        html += `<b>Root:</b> ${h.root}<br>`;
+        if (h.has_cycle) {
+            html += `<span style='color:#d32f2f;'>Cycle detected</span><div class='tree'>{}</div>`;
+        } else {
+            html += `<div class='tree'>${formatTree(h.tree)}</div>`;
+            html += `<b>Depth:</b> ${h.depth}`;
+        }
+        html += `</div>`;
+    });
+    html += `<div class='card'><b>Invalid Entries:</b> ${data.invalid_entries.length ? data.invalid_entries.join(', ') : 'None'}</div>`;
+    html += `<div class='card'><b>Duplicate Edges:</b> ${data.duplicate_edges.length ? data.duplicate_edges.join(', ') : 'None'}</div>`;
+    html += `<div class='summary'><b>Summary:</b><br>`;
+    html += `Total Trees: ${data.summary.total_trees}<br>`;
+    html += `Total Cycles: ${data.summary.total_cycles}<br>`;
+    html += `Largest Tree Root: ${data.summary.largest_tree_root}`;
+    html += `</div>`;
+    return html;
+}
+
+async function send() {
+    document.getElementById('error').style.display = 'none';
+    document.getElementById('response').innerHTML = '';
+    let raw = document.getElementById("input").value;
+
+    let data = raw.split(/,|\n/).map(x => x.trim()).filter(x => x);
+    try {
+        const res = await fetch("http://localhost:3000/bfhl", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data })
+        });
+        if (!res.ok) throw new Error('API error: ' + res.status);
+        const result = await res.json();
+        document.getElementById('response').innerHTML = renderResponse(result);
+    } catch (err) {
+        document.getElementById('error').innerText = err.message;
+        document.getElementById('error').style.display = 'block';
+    }
+}
+</script>
+</body>
+</html>

@@ -37,7 +37,7 @@ function detectCycleComponent(graph, start) {
     return hasCycle;
 }
 
-app.post("/bfhl", (req, res) => {
+app.post(["/bfhl", "/api/bfhl"], (req, res) => {
     const data = req.body.data || [];
 
     const { validEdges, invalidEntries, duplicateEdges } = processEdges(data);
